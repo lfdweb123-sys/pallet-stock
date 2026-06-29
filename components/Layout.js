@@ -13,7 +13,6 @@ export default function Layout({ children, title, description }) {
       <Head>
         <title>{pageTitle}</title>
         <meta name="description" content={description || t('hero_subtitle')} />
-        <html lang={locale} />
       </Head>
       <div className="min-h-screen flex flex-col bg-paper">
         <Header />
