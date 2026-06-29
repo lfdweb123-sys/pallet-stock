@@ -1,0 +1,18 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Commandes : créées et modifiées UNIQUEMENT via les routes /api (Firebase Admin SDK,
+    // qui ignore ces règles). Le client peut seulement LIRE ses propres commandes,
+    // et seulement s'il est connecté avec le même uid que celui enregistré sur la commande.
+    match /orders/{orderId} {
+      allow read: if request.auth != null && request.auth.uid == resource.data.uid;
+      allow write: if false;
+    }
+
+    // Par défaut, tout le reste est bloqué.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

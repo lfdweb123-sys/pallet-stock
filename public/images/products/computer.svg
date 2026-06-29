@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400">
+  <defs>
+    <pattern id="diag-computer" width="16" height="16" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">
+      <rect width="16" height="16" fill="#EAE3D6"/>
+      <line x1="0" y1="0" x2="0" y2="16" stroke="#DCD3C2" stroke-width="6"/>
+    </pattern>
+  </defs>
+  <rect width="400" height="400" fill="url(#diag-computer)"/>
+  <rect x="24" y="24" width="352" height="352" fill="none" stroke="#1B1D1F" stroke-width="2" stroke-dasharray="2 8"/>
+  <circle cx="200" cy="170" r="70" fill="#1B1D1F"/>
+  <text x="200" y="180" font-family="monospace" font-size="30" font-weight="bold" fill="#FF5A1F" text-anchor="middle" dominant-baseline="middle">PC</text>
+  <text x="200" y="300" font-family="monospace" font-size="22" font-weight="bold" fill="#1B1D1F" text-anchor="middle">PC/MAC</text>
+  <text x="200" y="328" font-family="monospace" font-size="12" fill="#6B7280" text-anchor="middle">PALLET STOCK . FOTO IN ARRIVO</text>
+</svg>
