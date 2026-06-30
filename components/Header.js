@@ -5,6 +5,7 @@ import { useLocale } from '../lib/locale-context';
 import { useCart } from '../lib/cart-context';
 import { useAuth } from '../lib/auth-context';
 import LanguageSwitcher from './LanguageSwitcher';
+import AnnouncementBar from './AnnouncementBar';
 
 export default function Header() {
   const { t } = useLocale();
@@ -14,6 +15,8 @@ export default function Header() {
 
   return (
     <header className="sticky top-0 z-50 bg-ink border-b border-white/10">
+      <AnnouncementBar />
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         <div className="flex items-center justify-between h-16">
           <Link href="/" className="flex items-center gap-2 group">
