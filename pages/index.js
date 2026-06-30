@@ -4,42 +4,26 @@ import Link from 'next/link';
 import Image from 'next/image';
 import Layout from '../components/Layout';
 import ProductCard from '../components/ProductCard';
+import StarRating from '../components/StarRating';
 import SmartsuppChat from '../components/SmartsuppChat';
 import { useLocale } from '../lib/locale-context';
-import { CATEGORIES, PRODUCTS } from '../lib/products';
+import { CATEGORIES, PRODUCTS, getProductBySlug } from '../lib/products';
 import TrustedAssociations from '../components/TrustedAssociations';
 
-// Slides du hero : produits phares avec lien
-const HERO_SLIDES = [
-  {
-    slug: 'macbook-air-m3-13',
-    image: '/images/products/macbook-air-size-unselect-202601-gallery-1.webp',
-    label: 'MacBook Air M3',
-    sub: '13" · 8GB · 256GB',
-    price: '€1 099',
-  },
-  {
-    slug: 'iphone-16-pro-max-256',
-    image: '/images/products/iphone16promax.webp',
-    label: 'iPhone 16 Pro Max',
-    sub: '256GB · A18 Pro',
-    price: '€1 199',
-  },
-  {
-    slug: 'ps5-pro',
-    image: 'https://media.direct.playstation.com/is/image/psdglobal/ps5-pro-Hero-1-angled?$Background_Large$',
-    label: 'PlayStation 5 Pro',
-    sub: 'GPU +45% · Wi-Fi 7 · 2TB',
-    price: '€699',
-  },
-  {
-    slug: 'ipad-pro-11-256',
-    image: '/images/products/ipad-pro-finish-select-202405-11inch-spaceblack-glossy-wifi.webp',
-    label: 'iPad Pro 11" M4',
-    sub: '256GB · Ultra Retina XDR',
-    price: '€1 099',
-  },
-];
+// Slides du hero : produits phares avec lien — données tirées directement de lib/products.js
+const HERO_SLIDES = ['macbook-air-m3-13', 'iphone-16-pro-max-256', 'ps5-pro', 'ipad-pro-11-256']
+  .map((slug) => {
+    const p = getProductBySlug(slug);
+    return {
+      slug,
+      image: p.image,
+      label: p.name,
+      sub: p.brand,
+      price: `€${p.price.toLocaleString('it-IT')}`,
+      rating: p.rating,
+      reviewsCount: p.reviewsCount,
+    };
+  });
 
 // Image représentative par catégorie (un produit phare de chaque)
 const CATEGORY_IMAGES = {
@@ -195,6 +179,13 @@ export default function Home() {
                         {slide.price}
                       </span>
                     </div>
+
+                    {/* Étoiles sous le nom du produit */}
+                    {slide.rating != null && (
+                      <div className="mt-2">
+                        <StarRating rating={slide.rating} count={slide.reviewsCount} size="sm" />
+                      </div>
+                    )}
                   </div>
 
                   {/* Indicateurs */}

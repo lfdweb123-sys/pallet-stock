@@ -3,6 +3,8 @@ import { useState, useRef, useCallback } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import Layout from '../../components/Layout';
+import ProductCard from '../../components/ProductCard';
+import StarRating, { StarIcon } from '../../components/StarRating';
 import { useLocale } from '../../lib/locale-context';
 import { useCart } from '../../lib/cart-context';
 import { getAllProducts, getProductBySlug } from '../../lib/products';
@@ -31,57 +33,6 @@ export async function getStaticProps({ params }) {
     .slice(0, 4 - related.length);
 
   return { props: { product, related: [...related, ...fallback] } };
-}
-
-// ── Composant étoiles ──────────────────────────────────────────────────────
-function StarRating({ rating, count, size = 'sm' }) {
-  const full = Math.floor(rating);
-  const half = rating - full >= 0.5;
-  const empty = 5 - full - (half ? 1 : 0);
-  const sizeClass = size === 'lg' ? 'w-5 h-5' : 'w-3.5 h-3.5';
-
-  return (
-    <div className="flex items-center gap-1">
-      <div className="flex items-center gap-0.5">
-        {Array.from({ length: full }).map((_, i) => (
-          <StarIcon key={`f${i}`} type="full" className={sizeClass} />
-        ))}
-        {half && <StarIcon type="half" className={sizeClass} />}
-        {Array.from({ length: empty }).map((_, i) => (
-          <StarIcon key={`e${i}`} type="empty" className={sizeClass} />
-        ))}
-      </div>
-      {count != null && (
-        <span className="font-mono text-xs text-slate">
-          {rating.toFixed(1)} ({count.toLocaleString()})
-        </span>
-      )}
-    </div>
-  );
-}
-
-function StarIcon({ type, className }) {
-  if (type === 'full') return (
-    <svg className={`${className} text-amber-400`} fill="currentColor" viewBox="0 0 20 20">
-      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-    </svg>
-  );
-  if (type === 'half') return (
-    <svg className={`${className} text-amber-400`} fill="currentColor" viewBox="0 0 20 20">
-      <defs>
-        <linearGradient id="half-grad">
-          <stop offset="50%" stopColor="currentColor" />
-          <stop offset="50%" stopColor="#d1d5db" />
-        </linearGradient>
-      </defs>
-      <path fill="url(#half-grad)" d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-    </svg>
-  );
-  return (
-    <svg className={`${className} text-gray-300`} fill="currentColor" viewBox="0 0 20 20">
-      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-    </svg>
-  );
 }
 
 // ── Zoom image ─────────────────────────────────────────────────────────────
@@ -129,40 +80,6 @@ function ZoomableImage({ src, alt }) {
         </div>
       )}
     </div>
-  );
-}
-
-// ── Carte produit recommandé (mini) ────────────────────────────────────────
-function RelatedCard({ product, locale, t, addItem }) {
-  const discount = Math.round(((product.oldPrice - product.price) / product.oldPrice) * 100);
-  return (
-    <Link
-      href={`/prodotto/${product.slug}`}
-      className="group bg-white rounded-sm shadow-sm hover:shadow-md transition-shadow flex flex-col overflow-hidden"
-    >
-      <div className="relative aspect-square bg-paperDark overflow-hidden">
-        <div className="absolute top-2 left-2 z-10 bg-signal text-white text-[10px] font-mono font-bold px-1.5 py-0.5 rotate-[-3deg]">
-          -{discount}%
-        </div>
-        <Image
-          src={product.image}
-          alt={product.name}
-          fill
-          className="object-cover group-hover:scale-105 transition-transform duration-300"
-        />
-      </div>
-      <div className="p-3 flex flex-col flex-1">
-        <div className="font-mono text-[9px] text-slate mb-0.5">{product.brand}</div>
-        <h3 className="font-display font-semibold text-ink text-xs leading-snug line-clamp-2 mb-1">
-          {product.name}
-        </h3>
-        <StarRating rating={product.rating} size="sm" />
-        <div className="mt-auto pt-2 flex items-baseline gap-1.5">
-          <span className="font-mono font-bold text-sm text-ink">€{product.price}</span>
-          <span className="font-mono text-[10px] text-slate line-through">€{product.oldPrice}</span>
-        </div>
-      </div>
-    </Link>
   );
 }
 
@@ -352,13 +269,7 @@ export default function ProductPage({ product, related }) {
               </h2>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 {related.map((p) => (
-                  <RelatedCard
-                    key={p.slug}
-                    product={p}
-                    locale={locale}
-                    t={t}
-                    addItem={addItem}
-                  />
+                  <ProductCard key={p.slug} product={p} />
                 ))}
               </div>
             </div>
