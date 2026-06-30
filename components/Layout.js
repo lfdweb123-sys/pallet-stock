@@ -1,5 +1,6 @@
 // components/Layout.js
 import Head from 'next/head';
+import Script from 'next/script';
 import { useRouter } from 'next/router';
 import Header from './Header';
 import Footer from './Footer';
@@ -9,28 +10,44 @@ import { LOCALES } from '../lib/i18n';
 const SITE_NAME = 'Pallet Stock';
 const SITE_URL = 'https://www.pallet-stock.it'; // ← remplace par ton vrai domaine
 
-// Mapping locale -> code Open Graph / hreflang
 const OG_LOCALE_MAP = { it: 'it_IT', fr: 'fr_FR', en: 'en_GB' };
 
 export default function Layout({
   children,
   title,
   description,
-  image, // image spécifique à la page (produit, catégorie...), sinon fallback
+  image,
   noindex = false,
-  type = 'website', // 'product' pour les fiches produit
+  type = 'website',
 }) {
   const { t, locale } = useLocale();
   const router = useRouter();
 
   const pageTitle = title ? `${title} — ${SITE_NAME}` : `${SITE_NAME} — ${t('tagline')}`;
   const pageDescription = description || t('hero_subtitle');
+
   const pagePath = router.asPath.split('?')[0].split('#')[0];
   const canonicalUrl = `${SITE_URL}${pagePath === '/' ? '' : pagePath}`;
   const ogImage = image || `${SITE_URL}/images/og-default.jpg`;
 
   return (
     <>
+      {/* ── Google Ads (gtag.js) ───────────────────────────── */}
+      <Script
+        src="https://www.googletagmanager.com/gtag/js?id=AW-16955731269"
+        strategy="afterInteractive"
+      />
+
+      <Script id="google-ads-tag" strategy="afterInteractive">
+        {`
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+
+          gtag('config', 'AW-16955731269');
+        `}
+      </Script>
+
       <Head>
         {/* ── Base ─────────────────────────────────────────── */}
         <title>{pageTitle}</title>
@@ -40,8 +57,9 @@ export default function Layout({
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-        {/* ── Canonical & alternates de langue ────────────── */}
+        {/* ── Canonical & alternates ───────────────────────── */}
         <link rel="canonical" href={canonicalUrl} />
+
         {LOCALES.map((code) => (
           <link
             key={code}
@@ -50,6 +68,7 @@ export default function Layout({
             href={`${SITE_URL}${pagePath === '/' ? '' : pagePath}?lang=${code}`}
           />
         ))}
+
         <link
           rel="alternate"
           hrefLang="x-default"
@@ -66,8 +85,13 @@ export default function Layout({
         <meta property="og:image:width" content="1200" />
         <meta property="og:image:height" content="630" />
         <meta property="og:locale" content={OG_LOCALE_MAP[locale] || 'it_IT'} />
+
         {LOCALES.filter((c) => c !== locale).map((code) => (
-          <meta key={code} property="og:locale:alternate" content={OG_LOCALE_MAP[code]} />
+          <meta
+            key={code}
+            property="og:locale:alternate"
+            content={OG_LOCALE_MAP[code]}
+          />
         ))}
 
         {/* ── Twitter Card ─────────────────────────────────── */}
@@ -76,7 +100,7 @@ export default function Layout({
         <meta name="twitter:description" content={pageDescription} />
         <meta name="twitter:image" content={ogImage} />
 
-        {/* ── Favicon & icônes ─────────────────────────────── */}
+        {/* ── Favicon ──────────────────────────────────────── */}
         <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
         <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
@@ -84,10 +108,10 @@ export default function Layout({
         <link rel="manifest" href="/site.webmanifest" />
         <meta name="theme-color" content="#0A0A0A" />
 
-        {/* ── Langue de la page ────────────────────────────── */}
+        {/* ── Langue ───────────────────────────────────────── */}
         <meta httpEquiv="content-language" content={locale} />
 
-        {/* ── JSON-LD : Organisation ───────────────────────── */}
+        {/* ── JSON-LD Organization ─────────────────────────── */}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
@@ -108,7 +132,7 @@ export default function Layout({
           }}
         />
 
-        {/* ── JSON-LD : WebSite + recherche ────────────────── */}
+        {/* ── JSON-LD Website ──────────────────────────────── */}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
