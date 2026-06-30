@@ -4,9 +4,9 @@ import { useLocale } from '../lib/locale-context';
 import { LOCALES } from '../lib/i18n';
 
 const LOCALE_OPTIONS = {
-  it: { label: 'Italiano', flag: '🇮🇹' },
-  fr: { label: 'Français', flag: '🇫🇷' },
-  en: { label: 'English',  flag: '🇬🇧' },
+  it: { label: 'Italiano', flag: 'https://flagcdn.com/w20/it.png' },
+  fr: { label: 'Français', flag: 'https://flagcdn.com/w20/fr.png' },
+  en: { label: 'English',  flag: 'https://flagcdn.com/w20/gb.png' },
 };
 
 export default function LanguageSwitcher({ className = '' }) {
@@ -14,7 +14,6 @@ export default function LanguageSwitcher({ className = '' }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
 
-  // Ferme le menu si on clique ailleurs
   useEffect(() => {
     function handleClickOutside(e) {
       if (ref.current && !ref.current.contains(e.target)) setOpen(false);
@@ -33,7 +32,7 @@ export default function LanguageSwitcher({ className = '' }) {
         aria-expanded={open}
         className="flex items-center gap-1.5 px-2 py-1 text-xs font-mono rounded transition-colors text-paper/70 hover:text-white hover:bg-white/10"
       >
-        <span>{current.flag}</span>
+        <img src={current.flag} alt={current.label} width={20} height={14} className="rounded-sm" />
         <span>{current.label}</span>
         <svg
           className={`w-3 h-3 transition-transform ${open ? 'rotate-180' : ''}`}
@@ -62,7 +61,7 @@ export default function LanguageSwitcher({ className = '' }) {
                       : 'text-paper/70 hover:text-white hover:bg-white/10'
                   }`}
                 >
-                  <span className="text-base leading-none">{opt.flag}</span>
+                  <img src={opt.flag} alt={opt.label} width={20} height={14} className="rounded-sm" />
                   <span>{opt.label}</span>
                 </button>
               </li>
