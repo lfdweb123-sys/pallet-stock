@@ -128,10 +128,10 @@ export default function Home() {
 
             {/* Colonne gauche : texte */}
             <div className="flex-1 min-w-0">
-              <div className="inline-flex items-center gap-2 font-mono text-[11px] text-signal border border-signal/40 rounded-full px-3 py-1 mb-6">
+              {/*<div className="inline-flex items-center gap-2 font-mono text-[11px] text-signal border border-signal/40 rounded-full px-3 py-1 mb-6">
                 <span className="w-1.5 h-1.5 rounded-full bg-signal animate-pulse" />
                 MAGAZZINO CAGLIARI · SARDEGNA
-              </div>
+              </div>*/}
               <h1 className="font-display font-bold text-4xl sm:text-6xl text-white max-w-3xl leading-[1.05] mb-6">
                 {t('hero_title')}
               </h1>

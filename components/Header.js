@@ -21,7 +21,7 @@ export default function Header() {
               PALLET<span className="text-signal">STOCK</span>
             </span>
             <span className="hidden sm:inline-block font-mono text-[10px] text-paper/40 border border-white/15 rounded px-1.5 py-0.5">
-              LOT.IT
+              
             </span>
           </Link>
 
