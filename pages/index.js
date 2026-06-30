@@ -7,6 +7,7 @@ import ProductCard from '../components/ProductCard';
 import SmartsuppChat from '../components/SmartsuppChat';
 import { useLocale } from '../lib/locale-context';
 import { CATEGORIES, PRODUCTS } from '../lib/products';
+import TrustedAssociations from '../components/TrustedAssociations';
 
 // Slides du hero : produits phares avec lien
 const HERO_SLIDES = [
@@ -323,6 +324,9 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* ── ILS NOUS FONT CONFIANCE (associations e-commerce) ──────── */}
+      <TrustedAssociations title={t('trusted_by_title')} />
     </Layout>
   );
 }
