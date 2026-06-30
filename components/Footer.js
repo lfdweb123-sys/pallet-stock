@@ -26,6 +26,8 @@ export default function Footer() {
             <li><Link href="/legale/termini" className="hover:text-white">{t('footer_terms')}</Link></li>
             <li><Link href="/legale/cookie" className="hover:text-white">{t('footer_cookies')}</Link></li>
             <li><Link href="/legale/note-legali" className="hover:text-white">{t('footer_legal_notice')}</Link></li>
+            <li><Link href="/legale/retour" className="hover:text-white">{t('footer_returns')}</Link></li>
+            <li><Link href="/legale/pagamento" className="hover:text-white">{t('footer_payment')}</Link></li>
           </ul>
         </div>
 
