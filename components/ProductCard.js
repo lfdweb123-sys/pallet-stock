@@ -3,6 +3,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useLocale } from '../lib/locale-context';
 import { useCart } from '../lib/cart-context';
+import StarRating from './StarRating';
 
 export default function ProductCard({ product }) {
   const { t, locale } = useLocale();
@@ -41,10 +42,17 @@ export default function ProductCard({ product }) {
       <div className="p-4 flex flex-col flex-1">
         <div className="font-mono text-[10px] text-slate mb-1">{product.sku} · {product.brand}</div>
         <Link href={`/prodotto/${product.slug}`}>
-          <h3 className="font-display font-semibold text-ink text-sm leading-snug mb-2 hover:text-signal transition-colors line-clamp-2">
+          <h3 className="font-display font-semibold text-ink text-sm leading-snug mb-1.5 hover:text-signal transition-colors line-clamp-2">
             {product.name}
           </h3>
         </Link>
+
+        {/* Étoiles sous le titre */}
+        {product.rating != null && (
+          <div className="mb-3">
+            <StarRating rating={product.rating} count={product.reviewsCount} size="sm" />
+          </div>
+        )}
 
         <div className="mt-auto">
           <div className="flex items-baseline gap-2 mb-1">
