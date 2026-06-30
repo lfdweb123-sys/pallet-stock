@@ -1,4 +1,5 @@
 // pages/index.js
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import Layout from '../components/Layout';
@@ -6,6 +7,38 @@ import ProductCard from '../components/ProductCard';
 import SmartsuppChat from '../components/SmartsuppChat';
 import { useLocale } from '../lib/locale-context';
 import { CATEGORIES, PRODUCTS } from '../lib/products';
+
+// Slides du hero : produits phares avec lien
+const HERO_SLIDES = [
+  {
+    slug: 'macbook-air-m3-13',
+    image: '/images/products/macbook-air-size-unselect-202601-gallery-1.webp',
+    label: 'MacBook Air M3',
+    sub: '13" · 8GB · 256GB',
+    price: '€1 099',
+  },
+  {
+    slug: 'iphone-16-pro-max-256',
+    image: '/images/products/iphone16promax.webp',
+    label: 'iPhone 16 Pro Max',
+    sub: '256GB · A18 Pro',
+    price: '€1 199',
+  },
+  {
+    slug: 'ps5-pro',
+    image: 'https://media.direct.playstation.com/is/image/psdglobal/ps5-pro-Hero-1-angled?$Background_Large$',
+    label: 'PlayStation 5 Pro',
+    sub: 'GPU +45% · Wi-Fi 7 · 2TB',
+    price: '€699',
+  },
+  {
+    slug: 'ipad-pro-11-256',
+    image: '/images/products/ipad-pro-finish-select-202405-11inch-spaceblack-glossy-wifi.webp',
+    label: 'iPad Pro 11" M4',
+    sub: '256GB · Ultra Retina XDR',
+    price: '€1 099',
+  },
+];
 
 // Image représentative par catégorie (un produit phare de chaque)
 const CATEGORY_IMAGES = {
@@ -72,41 +105,130 @@ export default function Home() {
   const { t, locale } = useLocale();
   const featured = PRODUCTS.filter((p) => p.stock <= 9).slice(0, 8);
 
+  // Slider état
+  const [current, setCurrent] = useState(0);
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrent((c) => (c + 1) % HERO_SLIDES.length);
+    }, 3500);
+    return () => clearInterval(timer);
+  }, []);
+
+  const slide = HERO_SLIDES[current];
+
   return (
     <Layout>
       <SmartsuppChat />
 
-      {/* ── HERO ─────────────────────────────── */}
+      {/* ── HERO 2 colonnes ──────────────────── */}
       <section className="relative bg-ink overflow-hidden">
         <div className="absolute inset-0 bg-diagonal-stripes opacity-40" />
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 pt-16 pb-20 sm:pt-24 sm:pb-28">
-          <div className="inline-flex items-center gap-2 font-mono text-[11px] text-signal border border-signal/40 rounded-full px-3 py-1 mb-6">
-            <span className="w-1.5 h-1.5 rounded-full bg-signal animate-pulse" />
-            MAGAZZINO CAGLIARI · SARDEGNA
-          </div>
-          <h1 className="font-display font-bold text-4xl sm:text-6xl text-white max-w-3xl leading-[1.05] mb-6">
-            {t('hero_title')}
-          </h1>
-          <p className="text-paper/70 text-base sm:text-lg max-w-xl mb-10 leading-relaxed">
-            {t('hero_subtitle')}
-          </p>
-          <Link
-            href="/negozio"
-            className="inline-flex items-center gap-2 bg-signal hover:bg-signalDark text-white font-medium px-6 py-3.5 rounded-sm transition-colors"
-          >
-            {t('hero_cta')}
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M5 12h14M13 5l7 7-7 7" />
-            </svg>
-          </Link>
+          <div className="flex flex-col lg:flex-row items-center gap-10 lg:gap-16">
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-16 max-w-2xl">
-            {[t('hero_kpi_1'), t('hero_kpi_2'), t('hero_kpi_3')].map((kpi, i) => (
-              <div key={i} className="border-t border-white/15 pt-3">
-                <span className="font-mono text-[11px] text-signal">0{i + 1}</span>
-                <p className="text-sm text-paper/80 mt-1">{kpi}</p>
+            {/* Colonne gauche : texte */}
+            <div className="flex-1 min-w-0">
+              <div className="inline-flex items-center gap-2 font-mono text-[11px] text-signal border border-signal/40 rounded-full px-3 py-1 mb-6">
+                <span className="w-1.5 h-1.5 rounded-full bg-signal animate-pulse" />
+                MAGAZZINO CAGLIARI · SARDEGNA
               </div>
-            ))}
+              <h1 className="font-display font-bold text-4xl sm:text-6xl text-white max-w-3xl leading-[1.05] mb-6">
+                {t('hero_title')}
+              </h1>
+              <p className="text-paper/70 text-base sm:text-lg max-w-xl mb-10 leading-relaxed">
+                {t('hero_subtitle')}
+              </p>
+              <Link
+                href="/negozio"
+                className="inline-flex items-center gap-2 bg-signal hover:bg-signalDark text-white font-medium px-6 py-3.5 rounded-sm transition-colors"
+              >
+                {t('hero_cta')}
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M5 12h14M13 5l7 7-7 7" />
+                </svg>
+              </Link>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-12 max-w-2xl">
+                {[t('hero_kpi_1'), t('hero_kpi_2'), t('hero_kpi_3')].map((kpi, i) => (
+                  <div key={i} className="border-t border-white/15 pt-3">
+                    <span className="font-mono text-[11px] text-signal">0{i + 1}</span>
+                    <p className="text-sm text-paper/80 mt-1">{kpi}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Colonne droite : slider produit — desktop uniquement */}
+            <div className="hidden lg:block w-80 xl:w-96 flex-shrink-0">
+              <Link href={`/prodotto/${slide.slug}`} className="block group">
+                <div className="relative rounded-sm overflow-hidden bg-white/5 border border-white/10 hover:border-signal/50 transition-colors">
+                  {/* Image */}
+                  <div className="relative h-64 xl:h-72 bg-white/5">
+                    {HERO_SLIDES.map((s, i) => (
+                      <div
+                        key={s.slug}
+                        className="absolute inset-0 transition-opacity duration-700"
+                        style={{ opacity: i === current ? 1 : 0 }}
+                      >
+                        <Image
+                          src={s.image}
+                          alt={s.label}
+                          fill
+                          className="object-contain p-8"
+                          priority={i === 0}
+                        />
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Info produit */}
+                  <div className="p-4 border-t border-white/10">
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <p className="font-display font-bold text-white text-base leading-tight">
+                          {slide.label}
+                        </p>
+                        <p className="font-mono text-xs text-paper/50 mt-0.5">{slide.sub}</p>
+                      </div>
+                      <span className="font-mono font-bold text-signal text-lg flex-shrink-0">
+                        {slide.price}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Indicateurs */}
+                  <div className="flex items-center justify-center gap-1.5 pb-3">
+                    {HERO_SLIDES.map((_, i) => (
+                      <button
+                        key={i}
+                        onClick={(e) => { e.preventDefault(); setCurrent(i); }}
+                        className={`w-1.5 h-1.5 rounded-full transition-all ${
+                          i === current ? 'bg-signal w-4' : 'bg-white/30'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </Link>
+
+              {/* Miniatures des autres slides */}
+              <div className="flex gap-2 mt-3">
+                {HERO_SLIDES.map((s, i) => (
+                  <button
+                    key={s.slug}
+                    onClick={() => setCurrent(i)}
+                    className={`flex-1 relative h-14 rounded-sm overflow-hidden border transition-all ${
+                      i === current
+                        ? 'border-signal'
+                        : 'border-white/10 opacity-50 hover:opacity-80'
+                    }`}
+                  >
+                    <Image src={s.image} alt={s.label} fill className="object-contain p-1 bg-white/5" />
+                  </button>
+                ))}
+              </div>
+            </div>
+
           </div>
         </div>
       </section>

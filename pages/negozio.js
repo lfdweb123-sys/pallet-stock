@@ -94,7 +94,6 @@ export default function Negozio() {
           <SidebarBtn
             active={activeCategory === 'all'}
             onClick={() => selectCategory('all')}
-            icon="🛍️"
             label={t('filter_all')}
           />
           {CATEGORIES.map((cat) => (
@@ -102,7 +101,6 @@ export default function Negozio() {
               key={cat.slug}
               active={activeCategory === cat.slug}
               onClick={() => selectCategory(cat.slug)}
-              icon={cat.icon}
               label={cat.label[locale] || cat.label.it}
             />
           ))}
