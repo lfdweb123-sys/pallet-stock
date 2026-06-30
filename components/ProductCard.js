@@ -12,7 +12,7 @@ export default function ProductCard({ product }) {
 
   return (
     <div className="group relative bg-white rounded-sm shadow-sm hover:shadow-xl transition-shadow duration-300 flex flex-col">
-      {/* Badge sconto en haut, façon tampon */}
+      {/* Badge sconto */}
       <div className="absolute top-3 left-3 z-10 bg-signal text-white text-xs font-mono font-bold px-2 py-1 rotate-[-3deg] shadow-md">
         -{discount}%
       </div>
@@ -22,12 +22,13 @@ export default function ProductCard({ product }) {
         </div>
       )}
 
+      {/* Image — object-cover remplit tout le cadre */}
       <Link href={`/prodotto/${product.slug}`} className="block relative aspect-square bg-paperDark overflow-hidden">
         <Image
           src={product.image}
           alt={product.name}
           fill
-          className="object-cover p-6 group-hover:scale-105 transition-transform duration-300"
+          className="object-cover group-hover:scale-105 transition-transform duration-300"
         />
       </Link>
 
