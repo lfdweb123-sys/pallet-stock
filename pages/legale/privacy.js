@@ -44,9 +44,9 @@ export default function Privacy() {
         <h2>5. Destinatari dei dati</h2>
         <p>I dati possono essere comunicati a:</p>
         <ul>
-          <li>Fornitori di servizi di pagamento (GeniusPay per i pagamenti con carta, NowPayments per i pagamenti in criptovaluta);</li>
+          <li>Fornitori di servizi di pagamento (Stripe per i pagamenti con carta, NowPayments per i pagamenti in criptovaluta);</li>
           <li>Fornitore del servizio di posta elettronica transazionale (Brevo);</li>
-          <li>Fornitore di hosting e infrastruttura (Vercel) e database (Google Firebase);</li>
+          <li>Fornitore di hosting e infrastruttura (V.);</li>
           <li>Fornitore del servizio di live chat (Smartsupp);</li>
           <li>Corrieri e operatori logistici per la consegna degli ordini;</li>
           <li>Autorità competenti, su richiesta, nei limiti previsti dalla legge.</li>

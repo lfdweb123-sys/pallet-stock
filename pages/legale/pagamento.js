@@ -13,7 +13,7 @@ export default function Pagamento() {
         <h2>1. Metodi di pagamento accettati</h2>
         <p>Pallet Stock accetta i seguenti metodi di pagamento:</p>
         <ul>
-          <li><strong>Carta di credito/debito</strong> — pagamento immediato e sicuro tramite GeniusPay;</li>
+          <li><strong>Carta di credito/debito</strong> — pagamento immediato e sicuro tramite Stripe;</li>
           <li><strong>Criptovalute</strong> — Bitcoin, USDT e altre crypto tramite NowPayments;</li>
           <li><strong>Bonifico bancario</strong> — le coordinate vengono fornite dopo la conferma dell'ordine.</li>
         </ul>
