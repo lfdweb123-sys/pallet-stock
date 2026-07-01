@@ -1,5 +1,5 @@
 // pages/checkout.js
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Layout from '../components/Layout';
 import { useLocale } from '../lib/locale-context';
@@ -7,6 +7,7 @@ import { useCart } from '../lib/cart-context';
 import { useAuth } from '../lib/auth-context';
 
 const COUNTRIES = ['Italia', 'Francia', 'Belgio', 'Spagna', 'Germania', 'Svizzera', 'Lussemburgo', 'Altro / Autre'];
+const LS_PROMO_KEY = 'ps_ref'; // clé localStorage pour le code parrainage
 
 export default function Checkout() {
   const { t } = useLocale();
@@ -16,11 +17,70 @@ export default function Checkout() {
 
   const [form, setForm] = useState({
     firstName: '', lastName: '', email: user?.email || '', phone: '',
-    address: '', city: '', zip: '', country: 'Italia', notes: ''
+    address: '', city: '', zip: '', country: 'Italia', notes: '',
   });
   const [method, setMethod] = useState('card');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+
+  // ── Code promo / parrainage ──────────────────────────────────────────
+  const [promoInput, setPromoInput] = useState('');
+  const [promoCode, setPromoCode]   = useState('');   // code validé
+  const [promoApplied, setPromoApplied] = useState(false);
+  const [promoError, setPromoError]     = useState('');
+  const [applyingPromo, setApplyingPromo] = useState(false);
+
+  // Restaurer le code depuis localStorage au chargement
+  useEffect(() => {
+    const saved = typeof window !== 'undefined' ? localStorage.getItem(LS_PROMO_KEY) : '';
+    if (saved) setPromoInput(saved);
+  }, []);
+
+  // Recalcul du total avec réduction
+  const isPromoEligible = ['card', 'crypto'].includes(method);
+  const discount  = promoApplied && isPromoEligible ? Math.round(subtotal * 0.10 * 100) / 100 : 0;
+  const finalTotal = subtotal - discount;
+
+  // Retirer le code quand on passe au virement (non éligible)
+  useEffect(() => {
+    if (!isPromoEligible && promoApplied) {
+      setPromoApplied(false);
+      setPromoCode('');
+    }
+  }, [method]);
+
+  async function applyPromo() {
+    const code = promoInput.trim().toUpperCase();
+    if (!code) return;
+    setApplyingPromo(true);
+    setPromoError('');
+    try {
+      const res = await fetch(`/api/referral/validate?code=${encodeURIComponent(code)}`);
+      const data = await res.json();
+      if (data.valid) {
+        setPromoCode(code);
+        setPromoApplied(true);
+        setPromoError('');
+        localStorage.setItem(LS_PROMO_KEY, code);
+      } else {
+        setPromoError(t('promo_code_invalid'));
+        setPromoApplied(false);
+        setPromoCode('');
+      }
+    } catch {
+      setPromoError(t('error_generic'));
+    } finally {
+      setApplyingPromo(false);
+    }
+  }
+
+  function removePromo() {
+    setPromoApplied(false);
+    setPromoCode('');
+    setPromoInput('');
+    setPromoError('');
+    localStorage.removeItem(LS_PROMO_KEY);
+  }
 
   function update(field, value) {
     setForm((f) => ({ ...f, [field]: value }));
@@ -38,14 +98,8 @@ export default function Checkout() {
   async function handleSubmit(e) {
     e.preventDefault();
     setError('');
-    if (items.length === 0) {
-      setError(t('error_generic'));
-      return;
-    }
-    if (!validate()) {
-      setError(t('required_field'));
-      return;
-    }
+    if (items.length === 0) { setError(t('error_generic')); return; }
+    if (!validate()) { setError(t('required_field')); return; }
 
     setSubmitting(true);
     try {
@@ -57,18 +111,22 @@ export default function Checkout() {
           items: items.map((i) => ({ slug: i.slug, qty: i.qty })),
           paymentMethod: method,
           locale: 'it',
-          uid: user?.uid || null
-        })
+          uid: user?.uid || null,
+          referralCode: promoApplied && isPromoEligible ? promoCode : null,
+        }),
       });
       const createData = await createRes.json();
       if (!createRes.ok) throw new Error(createData.error || 'Order error');
       const { orderId } = createData;
 
+      // Supprimer le code du localStorage après commande réussie
+      localStorage.removeItem(LS_PROMO_KEY);
+
       if (method === 'card') {
         const payRes = await fetch('/api/card-payment', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ orderId })
+          body: JSON.stringify({ orderId }),
         });
         const payData = await payRes.json();
         if (!payRes.ok || !payData.success) throw new Error(payData.message || 'Payment error');
@@ -85,7 +143,7 @@ export default function Checkout() {
         const payRes = await fetch('/api/nowpayments', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ orderId })
+          body: JSON.stringify({ orderId }),
         });
         const payData = await payRes.json();
         if (!payRes.ok || !payData.invoice_url) throw new Error(payData.message || 'Payment error');
@@ -94,7 +152,7 @@ export default function Checkout() {
         return;
       }
 
-      // bank transfer
+      // Virement bancaire
       clearCart();
       router.push(`/ordine-confermato?ref=${orderId}&method=bank`);
     } catch (err) {
@@ -111,24 +169,25 @@ export default function Checkout() {
 
         <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-10">
           <div className="lg:col-span-2 flex flex-col gap-8">
+
             {/* Contact */}
             <fieldset>
               <legend className="font-display font-semibold text-lg text-ink mb-4">{t('checkout_contact')}</legend>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Input label={t('checkout_firstname')} value={form.firstName} onChange={(v) => update('firstName', v)} required />
-                <Input label={t('checkout_lastname')} value={form.lastName} onChange={(v) => update('lastName', v)} required />
+                <Input label={t('checkout_lastname')}  value={form.lastName}  onChange={(v) => update('lastName', v)}  required />
                 <Input label={t('checkout_email')} type="email" value={form.email} onChange={(v) => update('email', v)} required />
                 <Input label={t('checkout_phone')} type="tel" value={form.phone} onChange={(v) => update('phone', v)} />
               </div>
             </fieldset>
 
-            {/* Shipping */}
+            {/* Livraison */}
             <fieldset>
               <legend className="font-display font-semibold text-lg text-ink mb-4">{t('checkout_shipping')}</legend>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Input className="sm:col-span-2" label={t('checkout_address')} value={form.address} onChange={(v) => update('address', v)} required />
                 <Input label={t('checkout_city')} value={form.city} onChange={(v) => update('city', v)} required />
-                <Input label={t('checkout_zip')} value={form.zip} onChange={(v) => update('zip', v)} required />
+                <Input label={t('checkout_zip')}  value={form.zip}  onChange={(v) => update('zip', v)}  required />
                 <div className="sm:col-span-2">
                   <label className="block text-xs font-medium text-slate mb-1">{t('checkout_country')}</label>
                   <select
@@ -151,7 +210,7 @@ export default function Checkout() {
               </div>
             </fieldset>
 
-            {/* Payment */}
+            {/* Paiement */}
             <fieldset>
               <legend className="font-display font-semibold text-lg text-ink mb-4">{t('checkout_payment')}</legend>
               <div className="flex flex-col gap-3">
@@ -171,10 +230,11 @@ export default function Checkout() {
             </fieldset>
           </div>
 
-          {/* Summary */}
-          <div className="bg-white border border-ink/10 rounded-sm p-6 h-fit">
-            <div className="font-mono text-xs text-slate mb-4">{items.length} {t('items_count')}</div>
-            <div className="flex flex-col gap-2 mb-4 max-h-56 overflow-y-auto">
+          {/* Récapitulatif */}
+          <div className="bg-white border border-ink/10 rounded-sm p-6 h-fit flex flex-col gap-4">
+            <div className="font-mono text-xs text-slate">{items.length} {t('items_count')}</div>
+
+            <div className="flex flex-col gap-2 max-h-56 overflow-y-auto">
               {items.map((i) => (
                 <div key={i.slug} className="flex justify-between text-sm">
                   <span className="text-ink/80 truncate pr-2">{i.name} × {i.qty}</span>
@@ -182,20 +242,76 @@ export default function Checkout() {
                 </div>
               ))}
             </div>
-            <div className="flex justify-between text-sm mb-2">
+
+            <div className="flex justify-between text-sm">
               <span className="text-slate">{t('cart_subtotal')}</span>
               <span className="font-mono">€{subtotal.toFixed(2)}</span>
             </div>
-            <div className="flex justify-between text-sm mb-4">
+            <div className="flex justify-between text-sm">
               <span className="text-slate">{t('cart_shipping')}</span>
               <span className="text-stock font-medium">{t('cart_shipping_free')}</span>
             </div>
-            <div className="flex justify-between font-bold text-lg border-t border-dashed border-ink/15 pt-4 mb-6">
-              <span>{t('cart_total')}</span>
-              <span className="font-mono">€{subtotal.toFixed(2)}</span>
+
+            {/* ── Code promo / parrainage ── */}
+            <div className="border-t border-dashed border-ink/10 pt-4">
+              <label className="block text-xs font-medium text-slate mb-1.5">
+                {t('promo_code_label')}
+                {method === 'bank' && (
+                  <span className="ml-2 text-slate/60 font-normal">{t('promo_code_bank_excluded')}</span>
+                )}
+              </label>
+
+              {promoApplied && isPromoEligible ? (
+                <div className="flex items-center justify-between bg-stock/10 border border-stock/30 rounded-sm px-3 py-2">
+                  <span className="text-sm text-stock font-mono font-semibold">{promoCode}</span>
+                  <button
+                    type="button"
+                    onClick={removePromo}
+                    className="text-xs text-slate hover:text-signal ml-3"
+                  >
+                    {t('promo_code_remove')}
+                  </button>
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={promoInput}
+                    onChange={(e) => setPromoInput(e.target.value.toUpperCase())}
+                    placeholder={t('promo_code_placeholder')}
+                    disabled={method === 'bank'}
+                    className="flex-1 border border-ink/15 rounded-sm px-3 py-2 text-sm focus:border-signal outline-none font-mono disabled:bg-paperDark disabled:text-slate disabled:cursor-not-allowed"
+                  />
+                  <button
+                    type="button"
+                    onClick={applyPromo}
+                    disabled={!promoInput.trim() || applyingPromo || method === 'bank'}
+                    className="bg-ink text-white text-xs font-medium px-3 py-2 rounded-sm hover:bg-signal transition-colors disabled:opacity-40 whitespace-nowrap"
+                  >
+                    {applyingPromo ? '…' : t('promo_code_apply')}
+                  </button>
+                </div>
+              )}
+              {promoError && <p className="text-signal text-xs mt-1.5">{promoError}</p>}
+              {promoApplied && isPromoEligible && (
+                <p className="text-stock text-xs mt-1.5 font-mono">{t('promo_code_applied')}</p>
+              )}
             </div>
 
-            {error && <p className="text-signal text-sm mb-4">{error}</p>}
+            {/* Réduction + total */}
+            {discount > 0 && (
+              <div className="flex justify-between text-sm text-stock">
+                <span>{t('cart_discount')} (−10%)</span>
+                <span className="font-mono">−€{discount.toFixed(2)}</span>
+              </div>
+            )}
+
+            <div className="flex justify-between font-bold text-lg border-t border-dashed border-ink/15 pt-3">
+              <span>{t('cart_total')}</span>
+              <span className="font-mono">€{finalTotal.toFixed(2)}</span>
+            </div>
+
+            {error && <p className="text-signal text-sm">{error}</p>}
 
             <button
               type="submit"
