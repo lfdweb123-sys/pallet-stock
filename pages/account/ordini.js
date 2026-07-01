@@ -808,7 +808,7 @@ function WithdrawalTab({ t, user }) {
       <h2 className="font-display font-bold text-xl text-ink mb-1">{t('withdrawal_title')}</h2>
       <p className="text-slate text-sm mb-8">{t('withdrawal_subtitle')}</p>
 
-      <div className="flex flex-col gap-6 max-w-lg">
+      <div className="flex flex-col gap-6 max-w-7xl">
 
         {/* Solde actuel */}
         <div className={`rounded-sm p-5 flex items-center justify-between ${canWithdraw ? 'bg-ink text-white' : 'bg-paperDark border border-ink/10'}`}>
