@@ -728,6 +728,203 @@ function ReferralTab({ t, locale, user }) {
   );
 }
 
+// ── Onglet : Retrait ─────────────────────────────────────────────────────
+function WithdrawalTab({ t, user }) {
+  const [balance, setBalance]       = useState(0);
+  const [loading, setLoading]       = useState(true);
+  const [form, setForm]             = useState({ accountName: '', iban: '', bic: '' });
+  const [submitting, setSubmitting] = useState(false);
+  const [status, setStatus]         = useState(null); // 'success' | 'error' | 'already'
+  const [history, setHistory]       = useState([]);
+
+  const MIN_WITHDRAWAL = 1000;
+  const canWithdraw = balance >= MIN_WITHDRAWAL;
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const userSnap = await getDoc(doc(db, 'users', user.uid));
+        if (userSnap.exists()) setBalance(userSnap.data().referralBalance || 0);
+
+        const q = query(
+          collection(db, 'withdrawalRequests'),
+          where('uid', '==', user.uid),
+          orderBy('createdAt', 'desc')
+        );
+        const snap = await getDocs(q);
+        setHistory(snap.docs.map((d) => d.data()));
+      } catch (e) {
+        console.error('Withdrawal load error:', e);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [user]);
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    if (!canWithdraw || !form.accountName.trim() || !form.iban.trim()) return;
+
+    // Bloquer si une demande est déjà en attente
+    const hasPending = history.some((r) => r.status === 'pending');
+    if (hasPending) { setStatus('already'); return; }
+
+    setSubmitting(true);
+    setStatus(null);
+    try {
+      const idToken = await user.getIdToken();
+      const res = await fetch('/api/referral/withdraw', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${idToken}`,
+        },
+        body: JSON.stringify({ ...form, amount: balance }),
+      });
+      const data = await res.json();
+      if (res.ok && data.ok) {
+        setStatus('success');
+        setHistory((h) => [data.request, ...h]);
+        setBalance(0);
+        setForm({ accountName: '', iban: '', bic: '' });
+      } else {
+        setStatus('error');
+      }
+    } catch {
+      setStatus('error');
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  if (loading) return (
+    <div className="flex items-center justify-center py-16">
+      <div className="w-6 h-6 border-2 border-ink/20 border-t-signal rounded-full animate-spin" />
+    </div>
+  );
+
+  return (
+    <>
+      <h2 className="font-display font-bold text-xl text-ink mb-1">{t('withdrawal_title')}</h2>
+      <p className="text-slate text-sm mb-8">{t('withdrawal_subtitle')}</p>
+
+      <div className="flex flex-col gap-6 max-w-lg">
+
+        {/* Solde actuel */}
+        <div className={`rounded-sm p-5 flex items-center justify-between ${canWithdraw ? 'bg-ink text-white' : 'bg-paperDark border border-ink/10'}`}>
+          <div>
+            <p className={`font-mono text-[11px] uppercase tracking-wide mb-1 ${canWithdraw ? 'text-white/60' : 'text-slate'}`}>
+              {t('referral_balance')}
+            </p>
+            <p className={`font-display font-bold text-3xl ${canWithdraw ? 'text-white' : 'text-ink'}`}>
+              €{Number(balance).toFixed(2)}
+            </p>
+            <p className={`text-xs mt-1 ${canWithdraw ? 'text-white/50' : 'text-slate'}`}>
+              {canWithdraw ? t('withdrawal_eligible') : t('withdrawal_min_note', { min: MIN_WITHDRAWAL })}
+            </p>
+          </div>
+          <span className="text-4xl">{canWithdraw ? '✅' : '⏳'}</span>
+        </div>
+
+        {/* Barre de progression vers 1000€ */}
+        {!canWithdraw && (
+          <div>
+            <div className="flex justify-between text-xs font-mono text-slate mb-1.5">
+              <span>€{Number(balance).toFixed(2)}</span>
+              <span>€{MIN_WITHDRAWAL}</span>
+            </div>
+            <div className="w-full bg-ink/10 rounded-full h-2">
+              <div
+                className="bg-signal h-2 rounded-full transition-all"
+                style={{ width: `${Math.min((balance / MIN_WITHDRAWAL) * 100, 100)}%` }}
+              />
+            </div>
+            <p className="text-xs text-slate font-mono mt-1.5">
+              {t('withdrawal_remaining', { amount: (MIN_WITHDRAWAL - balance).toFixed(2) })}
+            </p>
+          </div>
+        )}
+
+        {/* Formulaire de retrait */}
+        <form onSubmit={handleSubmit} className="bg-white border border-ink/10 rounded-sm p-5 flex flex-col gap-4">
+          <p className="font-display font-semibold text-sm text-ink">{t('withdrawal_bank_details')}</p>
+
+          <div>
+            <label className="block text-xs font-medium text-slate mb-1">{t('withdrawal_account_name')}</label>
+            <input
+              type="text" required value={form.accountName}
+              onChange={(e) => setForm({ ...form, accountName: e.target.value })}
+              disabled={!canWithdraw}
+              className="w-full border border-ink/15 rounded-sm px-3 py-2.5 text-sm focus:border-signal outline-none disabled:bg-paperDark disabled:text-slate disabled:cursor-not-allowed"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-slate mb-1">{t('bank_iban')}</label>
+            <input
+              type="text" required value={form.iban}
+              onChange={(e) => setForm({ ...form, iban: e.target.value.toUpperCase() })}
+              placeholder="FR76 XXXX XXXX XXXX XXXX XXXX XXX"
+              disabled={!canWithdraw}
+              className="w-full border border-ink/15 rounded-sm px-3 py-2.5 text-sm font-mono focus:border-signal outline-none disabled:bg-paperDark disabled:text-slate disabled:cursor-not-allowed"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-slate mb-1">{t('bank_bic')} <span className="text-slate/50">(optionnel)</span></label>
+            <input
+              type="text" value={form.bic}
+              onChange={(e) => setForm({ ...form, bic: e.target.value.toUpperCase() })}
+              disabled={!canWithdraw}
+              className="w-full border border-ink/15 rounded-sm px-3 py-2.5 text-sm font-mono focus:border-signal outline-none disabled:bg-paperDark disabled:text-slate disabled:cursor-not-allowed"
+            />
+          </div>
+
+          {status === 'success' && <p className="text-stock text-sm">{t('withdrawal_success')}</p>}
+          {status === 'error'   && <p className="text-signal text-sm">{t('error_generic')}</p>}
+          {status === 'already' && <p className="text-signal text-sm">{t('withdrawal_already_pending')}</p>}
+
+          <button
+            type="submit"
+            disabled={!canWithdraw || submitting}
+            className="bg-ink text-white font-medium py-3 rounded-sm hover:bg-signal transition-colors disabled:opacity-40 disabled:cursor-not-allowed mt-1"
+          >
+            {submitting ? '…' : t('withdrawal_request', { amount: balance.toFixed(2) })}
+          </button>
+
+          {!canWithdraw && (
+            <p className="text-xs text-slate text-center">{t('withdrawal_locked')}</p>
+          )}
+        </form>
+
+        {/* Historique des demandes */}
+        {history.length > 0 && (
+          <div className="bg-white border border-ink/10 rounded-sm overflow-hidden">
+            <div className="px-5 py-4 border-b border-ink/10">
+              <p className="font-display font-semibold text-sm text-ink">{t('withdrawal_history')}</p>
+            </div>
+            <div className="divide-y divide-ink/5">
+              {history.map((req, idx) => (
+                <div key={idx} className="px-5 py-3.5 flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-ink font-mono">€{Number(req.amount).toFixed(2)}</p>
+                    <p className="text-xs text-slate font-mono mt-0.5">{req.iban}</p>
+                  </div>
+                  <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${
+                    req.status === 'paid'    ? 'text-stock bg-stock/10' :
+                    req.status === 'pending' ? 'text-signal bg-signal/10' :
+                                              'text-slate bg-slate/10'
+                  }`}>
+                    {t(`withdrawal_status_${req.status}`)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </>
+  );
+}
+
 // ── Page principale ──────────────────────────────────────────────────────
 export default function Ordini() {
   const { t, locale } = useLocale();
@@ -762,12 +959,13 @@ useEffect(() => {
     );
   }
 
-  const TABS = [
-    { key: 'orders',   label: t('account_tab_orders'),   icon: '📦' },
-    { key: 'profile',  label: t('account_tab_profile'),  icon: '👤' },
-    { key: 'security', label: t('account_tab_security'), icon: '🔒' },
-    { key: 'referral', label: t('account_tab_referral'), icon: '🎁' },
-  ];
+const TABS = [
+  { key: 'orders',     label: t('account_tab_orders'),     icon: '📦' },
+  { key: 'profile',    label: t('account_tab_profile'),    icon: '👤' },
+  { key: 'security',   label: t('account_tab_security'),   icon: '🔒' },
+  { key: 'referral',   label: t('account_tab_referral'),   icon: '🎁' },
+  { key: 'withdrawal', label: t('account_tab_withdrawal'), icon: '💸' },
+];
 
   return (
     <Layout title={t('nav_orders')}>
@@ -813,6 +1011,7 @@ useEffect(() => {
             {activeTab === 'profile'  && <ProfileTab  t={t} user={user} />}
             {activeTab === 'security' && <SecurityTab t={t} user={user} />}
             {activeTab === 'referral' && <ReferralTab t={t} locale={locale} user={user} />}
+            {activeTab === 'withdrawal' && <WithdrawalTab t={t} user={user} />}
           </div>
         </div>
       </section>
