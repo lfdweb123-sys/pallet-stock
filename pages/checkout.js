@@ -7,7 +7,7 @@ import { useCart } from '../lib/cart-context';
 import { useAuth } from '../lib/auth-context';
 
 const COUNTRIES = ['Italia', 'Francia', 'Belgio', 'Spagna', 'Germania', 'Svizzera', 'Lussemburgo', 'Altro / Autre'];
-const LS_PROMO_KEY = 'ps_ref'; // clé localStorage pour le code parrainage
+const LS_PROMO_KEY = 'ps_ref';
 
 export default function Checkout() {
   const { t } = useLocale();
@@ -24,24 +24,21 @@ export default function Checkout() {
   const [error, setError] = useState('');
 
   // ── Code promo / parrainage ──────────────────────────────────────────
-  const [promoInput, setPromoInput] = useState('');
-  const [promoCode, setPromoCode]   = useState('');   // code validé
+  const [promoInput, setPromoInput]     = useState('');
+  const [promoCode, setPromoCode]       = useState('');
   const [promoApplied, setPromoApplied] = useState(false);
   const [promoError, setPromoError]     = useState('');
   const [applyingPromo, setApplyingPromo] = useState(false);
 
-  // Restaurer le code depuis localStorage au chargement
   useEffect(() => {
     const saved = typeof window !== 'undefined' ? localStorage.getItem(LS_PROMO_KEY) : '';
     if (saved) setPromoInput(saved);
   }, []);
 
-  // Recalcul du total avec réduction
   const isPromoEligible = ['card', 'crypto'].includes(method);
-  const discount  = promoApplied && isPromoEligible ? Math.round(subtotal * 0.10 * 100) / 100 : 0;
+  const discount   = promoApplied && isPromoEligible ? Math.round(subtotal * 0.10 * 100) / 100 : 0;
   const finalTotal = subtotal - discount;
 
-  // Retirer le code quand on passe au virement (non éligible)
   useEffect(() => {
     if (!isPromoEligible && promoApplied) {
       setPromoApplied(false);
@@ -119,7 +116,6 @@ export default function Checkout() {
       if (!createRes.ok) throw new Error(createData.error || 'Order error');
       const { orderId } = createData;
 
-      // Supprimer le code du localStorage après commande réussie
       localStorage.removeItem(LS_PROMO_KEY);
 
       if (method === 'card') {
@@ -152,7 +148,6 @@ export default function Checkout() {
         return;
       }
 
-      // Virement bancaire
       clearCart();
       router.push(`/ordine-confermato?ref=${orderId}&method=bank`);
     } catch (err) {
@@ -167,7 +162,8 @@ export default function Checkout() {
       <section className="max-w-5xl mx-auto px-4 sm:px-6 py-10">
         <h1 className="font-display font-bold text-2xl sm:text-3xl text-ink mb-8">{t('checkout_title')}</h1>
 
-        <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+        <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-10 items-start">
+          {/* ── Colonne gauche ── */}
           <div className="lg:col-span-2 flex flex-col gap-8">
 
             {/* Contact */}
@@ -177,7 +173,7 @@ export default function Checkout() {
                 <Input label={t('checkout_firstname')} value={form.firstName} onChange={(v) => update('firstName', v)} required />
                 <Input label={t('checkout_lastname')}  value={form.lastName}  onChange={(v) => update('lastName', v)}  required />
                 <Input label={t('checkout_email')} type="email" value={form.email} onChange={(v) => update('email', v)} required />
-                <Input label={t('checkout_phone')} type="tel" value={form.phone} onChange={(v) => update('phone', v)} />
+                <Input label={t('checkout_phone')} type="tel"  value={form.phone} onChange={(v) => update('phone', v)} />
               </div>
             </fieldset>
 
@@ -214,35 +210,28 @@ export default function Checkout() {
             <fieldset>
               <legend className="font-display font-semibold text-lg text-ink mb-4">{t('checkout_payment')}</legend>
               <div className="flex flex-col gap-3">
-                <PaymentOption
-                  id="card" selected={method === 'card'} onSelect={setMethod}
-                  title={t('pay_card')} desc={t('pay_card_desc')} icon="💳"
-                />
-                <PaymentOption
-                  id="crypto" selected={method === 'crypto'} onSelect={setMethod}
-                  title={t('pay_crypto')} desc={t('pay_crypto_desc')} icon="₿"
-                />
-                <PaymentOption
-                  id="bank" selected={method === 'bank'} onSelect={setMethod}
-                  title={t('pay_bank')} desc={t('pay_bank_desc')} icon="🏦"
-                />
+                <PaymentOption id="card"   selected={method === 'card'}   onSelect={setMethod} title={t('pay_card')}   desc={t('pay_card_desc')}   icon="💳" />
+                <PaymentOption id="crypto" selected={method === 'crypto'} onSelect={setMethod} title={t('pay_crypto')} desc={t('pay_crypto_desc')} icon="₿"  />
+                <PaymentOption id="bank"   selected={method === 'bank'}   onSelect={setMethod} title={t('pay_bank')}   desc={t('pay_bank_desc')}   icon="🏦" />
               </div>
             </fieldset>
           </div>
 
-          {/* Récapitulatif */}
-          <div className="bg-white border border-ink/10 rounded-sm p-6 h-fit flex flex-col gap-4">
-            <div className="font-mono text-xs text-slate">{items.length} {t('items_count')}</div>
+          {/* ── Récapitulatif sticky ── */}
+          <div className="lg:sticky lg:top-6 bg-white border border-ink/10 rounded-sm p-6 flex flex-col gap-4">
 
-            <div className="flex flex-col gap-2 max-h-56 overflow-y-auto">
+            {/* Articles */}
+            <div className="font-mono text-xs text-slate">{items.length} {t('items_count')}</div>
+            <div className="flex flex-col gap-2 max-h-48 overflow-y-auto">
               {items.map((i) => (
-                <div key={i.slug} className="flex justify-between text-sm">
-                  <span className="text-ink/80 truncate pr-2">{i.name} × {i.qty}</span>
-                  <span className="font-mono">€{(i.price * i.qty).toFixed(2)}</span>
+                <div key={i.slug} className="flex justify-between text-sm gap-2">
+                  <span className="text-ink/80 truncate">{i.name} × {i.qty}</span>
+                  <span className="font-mono flex-shrink-0">€{(i.price * i.qty).toFixed(2)}</span>
                 </div>
               ))}
             </div>
 
+            {/* Sous-total + livraison */}
             <div className="flex justify-between text-sm">
               <span className="text-slate">{t('cart_subtotal')}</span>
               <span className="font-mono">€{subtotal.toFixed(2)}</span>
@@ -252,53 +241,51 @@ export default function Checkout() {
               <span className="text-stock font-medium">{t('cart_shipping_free')}</span>
             </div>
 
-            {/* ── Code promo / parrainage ── */}
-            <div className="border-t border-dashed border-ink/10 pt-4">
-              <label className="block text-xs font-medium text-slate mb-1.5">
+            {/* ── Code promo ── */}
+            <div className="border-t border-dashed border-ink/10 pt-4 flex flex-col gap-2">
+              <label className="block text-xs font-medium text-slate">
                 {t('promo_code_label')}
                 {method === 'bank' && (
-                  <span className="ml-2 text-slate/60 font-normal">{t('promo_code_bank_excluded')}</span>
+                  <span className="ml-1 text-slate/60 font-normal">{t('promo_code_bank_excluded')}</span>
                 )}
               </label>
 
               {promoApplied && isPromoEligible ? (
                 <div className="flex items-center justify-between bg-stock/10 border border-stock/30 rounded-sm px-3 py-2">
                   <span className="text-sm text-stock font-mono font-semibold">{promoCode}</span>
-                  <button
-                    type="button"
-                    onClick={removePromo}
-                    className="text-xs text-slate hover:text-signal ml-3"
-                  >
+                  <button type="button" onClick={removePromo} className="text-xs text-slate hover:text-signal ml-2 flex-shrink-0">
                     {t('promo_code_remove')}
                   </button>
                 </div>
               ) : (
-                <div className="flex gap-2">
+                /* INPUT + BOUTON sur deux lignes pour éviter le débordement */
+                <div className="flex flex-col gap-2">
                   <input
                     type="text"
                     value={promoInput}
                     onChange={(e) => setPromoInput(e.target.value.toUpperCase())}
                     placeholder={t('promo_code_placeholder')}
                     disabled={method === 'bank'}
-                    className="flex-1 border border-ink/15 rounded-sm px-3 py-2 text-sm focus:border-signal outline-none font-mono disabled:bg-paperDark disabled:text-slate disabled:cursor-not-allowed"
+                    className="w-full border border-ink/15 rounded-sm px-3 py-2 text-sm focus:border-signal outline-none font-mono disabled:bg-paperDark disabled:text-slate disabled:cursor-not-allowed"
                   />
                   <button
                     type="button"
                     onClick={applyPromo}
                     disabled={!promoInput.trim() || applyingPromo || method === 'bank'}
-                    className="bg-ink text-white text-xs font-medium px-3 py-2 rounded-sm hover:bg-signal transition-colors disabled:opacity-40 whitespace-nowrap"
+                    className="w-full bg-ink text-white text-sm font-medium py-2 rounded-sm hover:bg-signal transition-colors disabled:opacity-40"
                   >
                     {applyingPromo ? '…' : t('promo_code_apply')}
                   </button>
                 </div>
               )}
-              {promoError && <p className="text-signal text-xs mt-1.5">{promoError}</p>}
+
+              {promoError && <p className="text-signal text-xs">{promoError}</p>}
               {promoApplied && isPromoEligible && (
-                <p className="text-stock text-xs mt-1.5 font-mono">{t('promo_code_applied')}</p>
+                <p className="text-stock text-xs font-mono">{t('promo_code_applied')}</p>
               )}
             </div>
 
-            {/* Réduction + total */}
+            {/* Réduction */}
             {discount > 0 && (
               <div className="flex justify-between text-sm text-stock">
                 <span>{t('cart_discount')} (−10%)</span>
@@ -306,6 +293,7 @@ export default function Checkout() {
               </div>
             )}
 
+            {/* Total */}
             <div className="flex justify-between font-bold text-lg border-t border-dashed border-ink/15 pt-3">
               <span>{t('cart_total')}</span>
               <span className="font-mono">€{finalTotal.toFixed(2)}</span>
