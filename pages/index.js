@@ -285,6 +285,66 @@ export default function Home() {
         </div>
       </section>
 
+      {/* ── PARRAINAGE ──────────────────────── */}
+<section className="bg-ink overflow-hidden">
+  <div className="relative max-w-7xl mx-auto px-4 sm:px-6 py-16 sm:py-20">
+    <div className="absolute inset-0 bg-diagonal-stripes opacity-20 pointer-events-none" />
+    <div className="relative flex flex-col lg:flex-row items-center gap-10 lg:gap-20">
+
+      {/* Gauche : texte */}
+      <div className="flex-1 min-w-0">
+        <div className="inline-flex items-center gap-2 font-mono text-[11px] text-signal border border-signal/40 rounded-full px-3 py-1 mb-6">
+          <span className="w-1.5 h-1.5 rounded-full bg-signal animate-pulse" />
+          {t('referral_badge')}
+        </div>
+
+        <h2 className="font-display font-bold text-3xl sm:text-4xl text-white leading-tight mb-4">
+          {t('referral_home_title')}
+        </h2>
+        <p className="text-paper/60 text-base leading-relaxed mb-8 max-w-lg">
+          {t('referral_home_subtitle')}
+        </p>
+
+        <div className="flex flex-col sm:flex-row gap-3">
+          <Link
+            href="/account/ordini?tab=referral"
+            className="inline-flex items-center justify-center gap-2 bg-signal hover:bg-signalDark text-white font-medium px-6 py-3.5 rounded-sm transition-colors"
+          >
+            🎁 {t('referral_home_cta')}
+          </Link>
+          <Link
+            href="/negozio"
+            className="inline-flex items-center justify-center gap-2 border border-white/20 hover:border-white/50 text-paper/80 font-medium px-6 py-3.5 rounded-sm transition-colors"
+          >
+            {t('hero_cta')}
+          </Link>
+        </div>
+      </div>
+
+      {/* Droite : 3 étapes */}
+      <div className="flex-shrink-0 w-full max-w-sm flex flex-col gap-4">
+        {[
+          { step: '01', icon: '📤', key: 'referral_how_1' },
+          { step: '02', icon: '💸', key: 'referral_how_2' },
+          { step: '03', icon: '💰', key: 'referral_how_3' },
+        ].map(({ step, icon, key }) => (
+          <div key={step} className="flex items-start gap-4 bg-white/5 border border-white/10 rounded-sm px-5 py-4">
+            <span className="font-mono text-[11px] text-signal mt-0.5 flex-shrink-0">{step}</span>
+            <span className="text-xl flex-shrink-0">{icon}</span>
+            <p className="text-sm text-paper/70 leading-relaxed">{t(key)}</p>
+          </div>
+        ))}
+
+        <div className="border border-signal/30 bg-signal/5 rounded-sm px-5 py-3 flex items-center gap-3">
+          <span className="text-2xl">⚠️</span>
+          <p className="text-xs text-paper/50 leading-relaxed font-mono">{t('referral_bank_excluded_note')}</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
       {/* ── TRUST BAND ───────────────────────── */}
       <section className="bg-steel text-paper/80">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm">
