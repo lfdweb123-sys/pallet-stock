@@ -1,5 +1,6 @@
 // pages/account/ordini.js
 import { useEffect, useState, useCallback } from 'react';
+import { useRouter } from 'next/router';
 import Link from 'next/link';
 import Image from 'next/image';
 import {
@@ -732,6 +733,11 @@ export default function Ordini() {
   const { t, locale } = useLocale();
   const { user, authLoading, logout } = useAuth();
   const [activeTab, setActiveTab] = useState('orders');
+
+  const { query } = useRouter();
+useEffect(() => {
+  if (query.tab === 'referral') setActiveTab('referral');
+}, [query.tab])
 
   if (!authLoading && !user) {
     return (
