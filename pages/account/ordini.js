@@ -369,7 +369,7 @@ function ProfileTab({ t, user }) {
       <h2 className="font-display font-bold text-xl text-ink mb-1">{t('profile_title')}</h2>
       <p className="text-slate text-sm mb-6">{t('profile_subtitle')}</p>
 
-      <form onSubmit={handleSubmit} className="bg-white border border-ink/10 rounded-sm p-6 flex flex-col gap-4 max-w-lg">
+      <form onSubmit={handleSubmit} className="bg-white border border-ink/10 rounded-sm p-6 flex flex-col gap-4 .max-w-7xl">
         <div>
           <label className="block text-xs font-medium text-slate mb-1">{t('checkout_email')}</label>
           <input
@@ -467,7 +467,7 @@ function SecurityTab({ t, user }) {
       <h2 className="font-display font-bold text-xl text-ink mb-1">{t('security_title')}</h2>
       <p className="text-slate text-sm mb-6">{t('security_subtitle')}</p>
 
-      <form onSubmit={handleSubmit} className="bg-white border border-ink/10 rounded-sm p-6 flex flex-col gap-4 max-w-lg">
+      <form onSubmit={handleSubmit} className="bg-white border border-ink/10 rounded-sm p-6 flex flex-col gap-4 .max-w-7xl">
         {[
           [t('security_current_password'), currentPassword, setCurrentPassword],
           [t('security_new_password'),     newPassword,     setNewPassword],
@@ -593,7 +593,7 @@ function ReferralTab({ t, locale, user }) {
       <h2 className="font-display font-bold text-xl text-ink mb-1">{t('referral_title')}</h2>
       <p className="text-slate text-sm mb-8">{t('referral_subtitle')}</p>
 
-      <div className="flex flex-col gap-6 max-w-lg">
+      <div className="flex flex-col gap-6 .max-w-7xl">
 
         {/* ── Solde du portefeuille ── */}
         <div className="bg-ink text-white rounded-sm p-5 flex items-center justify-between">
