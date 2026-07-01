@@ -1,5 +1,5 @@
 // pages/account/ordini.js
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import {
@@ -36,7 +36,7 @@ function formatDate(timestamp, locale) {
   });
 }
 
-// ── Facture imprimable (overlay plein écran) ────────────────────────────
+// ── Facture imprimable ───────────────────────────────────────────────────
 function InvoiceOverlay({ order, items, t, locale, onClose }) {
   const customer = order.customer || {};
   return (
@@ -153,6 +153,9 @@ function OrderCard({ order, t, locale, onShowInvoice }) {
           <span>{t('orders_date')}: {formatDate(order.createdAt, locale)}</span>
           <span>{itemsCount} {t('orders_items_count')}</span>
           {paymentKey && <span>{t(paymentKey)}</span>}
+          {order.discount > 0 && (
+            <span className="text-stock">−€{Number(order.discount).toFixed(2)} promo</span>
+          )}
         </div>
       </div>
 
@@ -263,11 +266,9 @@ function OrdersTab({ t, locale, user }) {
             <p className="text-slate text-sm font-mono">{t('orders_loading')}</p>
           </div>
         )}
-
         {!loadingOrders && error && (
           <div className="text-center py-12"><p className="text-signal text-sm">{t('error_generic')}</p></div>
         )}
-
         {!loadingOrders && !error && orders.length === 0 && (
           <div className="flex flex-col items-center justify-center py-20 text-center">
             <span className="text-5xl mb-4">📦</span>
@@ -278,7 +279,6 @@ function OrdersTab({ t, locale, user }) {
             </Link>
           </div>
         )}
-
         {!loadingOrders && orders.map((order) => (
           <OrderCard key={order.orderId} order={order} t={t} locale={locale} onShowInvoice={setInvoiceData} />
         ))}
@@ -311,7 +311,7 @@ function ProfileTab({ t, user }) {
   const [form, setForm] = useState({ name: '', phone: '', address: '', city: '', zip: '', country: '' });
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [status, setStatus] = useState(null); // 'success' | 'error' | null
+  const [status, setStatus] = useState(null);
 
   useEffect(() => {
     (async () => {
@@ -357,7 +357,7 @@ function ProfileTab({ t, user }) {
 
   if (loadingProfile) {
     return (
-      <div className="flex flex-col items-center justify-center py-16 text-center">
+      <div className="flex flex-col items-center justify-center py-16">
         <div className="w-6 h-6 border-2 border-ink/20 border-t-signal rounded-full animate-spin" />
       </div>
     );
@@ -376,53 +376,43 @@ function ProfileTab({ t, user }) {
             className="w-full border border-ink/10 bg-paperDark/50 rounded-sm px-3 py-2.5 text-sm text-slate cursor-not-allowed"
           />
         </div>
-        <div>
-          <label className="block text-xs font-medium text-slate mb-1">{t('profile_name')}</label>
-          <input
-            type="text" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })}
-            className="w-full border border-ink/15 rounded-sm px-3 py-2.5 text-sm focus:border-signal outline-none"
-          />
-        </div>
-        <div>
-          <label className="block text-xs font-medium text-slate mb-1">{t('profile_phone')}</label>
-          <input
-            type="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })}
-            className="w-full border border-ink/15 rounded-sm px-3 py-2.5 text-sm focus:border-signal outline-none"
-          />
-        </div>
-        <div>
-          <label className="block text-xs font-medium text-slate mb-1">{t('profile_address')}</label>
-          <input
-            type="text" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })}
-            className="w-full border border-ink/15 rounded-sm px-3 py-2.5 text-sm focus:border-signal outline-none"
-          />
-        </div>
+        {[
+          ['profile_name', 'text', 'name'],
+          ['profile_phone', 'tel', 'phone'],
+          ['profile_address', 'text', 'address'],
+        ].map(([labelKey, type, field]) => (
+          <div key={field}>
+            <label className="block text-xs font-medium text-slate mb-1">{t(labelKey)}</label>
+            <input
+              type={type} value={form[field]}
+              onChange={(e) => setForm({ ...form, [field]: e.target.value })}
+              className="w-full border border-ink/15 rounded-sm px-3 py-2.5 text-sm focus:border-signal outline-none"
+            />
+          </div>
+        ))}
         <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="block text-xs font-medium text-slate mb-1">{t('profile_city')}</label>
-            <input
-              type="text" value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })}
-              className="w-full border border-ink/15 rounded-sm px-3 py-2.5 text-sm focus:border-signal outline-none"
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-slate mb-1">{t('profile_zip')}</label>
-            <input
-              type="text" value={form.zip} onChange={(e) => setForm({ ...form, zip: e.target.value })}
-              className="w-full border border-ink/15 rounded-sm px-3 py-2.5 text-sm focus:border-signal outline-none"
-            />
-          </div>
+          {[['profile_city', 'city'], ['profile_zip', 'zip']].map(([labelKey, field]) => (
+            <div key={field}>
+              <label className="block text-xs font-medium text-slate mb-1">{t(labelKey)}</label>
+              <input
+                type="text" value={form[field]}
+                onChange={(e) => setForm({ ...form, [field]: e.target.value })}
+                className="w-full border border-ink/15 rounded-sm px-3 py-2.5 text-sm focus:border-signal outline-none"
+              />
+            </div>
+          ))}
         </div>
         <div>
           <label className="block text-xs font-medium text-slate mb-1">{t('profile_country')}</label>
           <input
-            type="text" value={form.country} onChange={(e) => setForm({ ...form, country: e.target.value })}
+            type="text" value={form.country}
+            onChange={(e) => setForm({ ...form, country: e.target.value })}
             className="w-full border border-ink/15 rounded-sm px-3 py-2.5 text-sm focus:border-signal outline-none"
           />
         </div>
 
         {status === 'success' && <p className="text-stock text-sm">{t('profile_saved')}</p>}
-        {status === 'error' && <p className="text-signal text-sm">{t('profile_save_error')}</p>}
+        {status === 'error'   && <p className="text-signal text-sm">{t('profile_save_error')}</p>}
 
         <button
           type="submit" disabled={saving}
@@ -438,25 +428,18 @@ function ProfileTab({ t, user }) {
 // ── Onglet : Sécurité ─────────────────────────────────────────────────────
 function SecurityTab({ t, user }) {
   const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
+  const [newPassword, setNewPassword]         = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState('');
+  const [saving, setSaving]   = useState(false);
+  const [error, setError]     = useState('');
   const [success, setSuccess] = useState(false);
 
   async function handleSubmit(e) {
     e.preventDefault();
     setError('');
     setSuccess(false);
-
-    if (newPassword.length < 6) {
-      setError(t('security_error_weak'));
-      return;
-    }
-    if (newPassword !== confirmPassword) {
-      setError(t('security_error_mismatch'));
-      return;
-    }
+    if (newPassword.length < 6)          { setError(t('security_error_weak'));     return; }
+    if (newPassword !== confirmPassword)  { setError(t('security_error_mismatch')); return; }
 
     setSaving(true);
     try {
@@ -484,29 +467,22 @@ function SecurityTab({ t, user }) {
       <p className="text-slate text-sm mb-6">{t('security_subtitle')}</p>
 
       <form onSubmit={handleSubmit} className="bg-white border border-ink/10 rounded-sm p-6 flex flex-col gap-4 max-w-lg">
-        <div>
-          <label className="block text-xs font-medium text-slate mb-1">{t('security_current_password')}</label>
-          <input
-            type="password" required value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)}
-            className="w-full border border-ink/15 rounded-sm px-3 py-2.5 text-sm focus:border-signal outline-none"
-          />
-        </div>
-        <div>
-          <label className="block text-xs font-medium text-slate mb-1">{t('security_new_password')}</label>
-          <input
-            type="password" required minLength={6} value={newPassword} onChange={(e) => setNewPassword(e.target.value)}
-            className="w-full border border-ink/15 rounded-sm px-3 py-2.5 text-sm focus:border-signal outline-none"
-          />
-        </div>
-        <div>
-          <label className="block text-xs font-medium text-slate mb-1">{t('security_confirm_password')}</label>
-          <input
-            type="password" required minLength={6} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)}
-            className="w-full border border-ink/15 rounded-sm px-3 py-2.5 text-sm focus:border-signal outline-none"
-          />
-        </div>
+        {[
+          [t('security_current_password'), currentPassword, setCurrentPassword],
+          [t('security_new_password'),     newPassword,     setNewPassword],
+          [t('security_confirm_password'), confirmPassword, setConfirmPassword],
+        ].map(([label, val, setter]) => (
+          <div key={label}>
+            <label className="block text-xs font-medium text-slate mb-1">{label}</label>
+            <input
+              type="password" required minLength={6} value={val}
+              onChange={(e) => setter(e.target.value)}
+              className="w-full border border-ink/15 rounded-sm px-3 py-2.5 text-sm focus:border-signal outline-none"
+            />
+          </div>
+        ))}
 
-        {error && <p className="text-signal text-sm">{error}</p>}
+        {error   && <p className="text-signal text-sm">{error}</p>}
         {success && <p className="text-stock text-sm">{t('security_updated')}</p>}
 
         <button
@@ -520,7 +496,238 @@ function SecurityTab({ t, user }) {
   );
 }
 
-// ── Page principale avec sidebar ─────────────────────────────────────────
+// ── Onglet : Parrainage ──────────────────────────────────────────────────
+function ReferralTab({ t, locale, user }) {
+  const [referralCode, setReferralCode] = useState('');
+  const [balance, setBalance]           = useState(0);
+  const [referrals, setReferrals]       = useState([]);
+  const [loading, setLoading]           = useState(true);
+  const [generating, setGenerating]     = useState(false);
+  const [copied, setCopied]             = useState(false);
+  const [genError, setGenError]         = useState('');
+
+  // ── Chargement du code + solde + historique ────────────────────────
+  useEffect(() => {
+    (async () => {
+      setLoading(true);
+      try {
+        // Lire le doc utilisateur (code + solde)
+        const userSnap = await getDoc(doc(db, 'users', user.uid));
+        if (userSnap.exists()) {
+          const d = userSnap.data();
+          if (d.referralCode) setReferralCode(d.referralCode);
+          setBalance(d.referralBalance || 0);
+        }
+
+        // Historique des gains (nécessite l'index Firestore : referrerId ASC + createdAt DESC)
+        const q = query(
+          collection(db, 'referrals'),
+          where('referrerId', '==', user.uid),
+          orderBy('createdAt', 'desc')
+        );
+        const snap = await getDocs(q);
+        setReferrals(snap.docs.map((d) => d.data()));
+      } catch (e) {
+        console.error('Referral load error:', e);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [user]);
+
+  // ── Générer le code via API ────────────────────────────────────────
+  const generateCode = useCallback(async () => {
+    setGenerating(true);
+    setGenError('');
+    try {
+      const idToken = await user.getIdToken();
+      const res = await fetch('/api/referral/generate', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${idToken}` },
+      });
+      const data = await res.json();
+      if (data.code) {
+        setReferralCode(data.code);
+      } else {
+        setGenError(t('error_generic'));
+      }
+    } catch (e) {
+      setGenError(t('error_generic'));
+    } finally {
+      setGenerating(false);
+    }
+  }, [user, t]);
+
+  // Auto-générer si pas encore de code
+  useEffect(() => {
+    if (!loading && !referralCode) generateCode();
+  }, [loading, referralCode]);
+
+  // ── Copier le code ─────────────────────────────────────────────────
+  function copyCode() {
+    if (!referralCode) return;
+    navigator.clipboard.writeText(referralCode);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
+  // ── Copier le message de partage ───────────────────────────────────
+  function shareMessage() {
+    const msg = `${t('referral_share_msg_prefix')} ${referralCode} ${t('referral_share_msg_suffix')}`;
+    navigator.clipboard.writeText(msg);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16">
+        <div className="w-6 h-6 border-2 border-ink/20 border-t-signal rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <h2 className="font-display font-bold text-xl text-ink mb-1">{t('referral_title')}</h2>
+      <p className="text-slate text-sm mb-8">{t('referral_subtitle')}</p>
+
+      <div className="flex flex-col gap-6 max-w-lg">
+
+        {/* ── Solde du portefeuille ── */}
+        <div className="bg-ink text-white rounded-sm p-5 flex items-center justify-between">
+          <div>
+            <p className="font-mono text-[11px] uppercase tracking-wide text-white/60 mb-1">
+              {t('referral_balance')}
+            </p>
+            <p className="font-display font-bold text-3xl">€{Number(balance).toFixed(2)}</p>
+            <p className="text-xs text-white/50 mt-1">{t('referral_balance_note')}</p>
+          </div>
+          <span className="text-4xl">💰</span>
+        </div>
+
+        {/* ── Code de parrainage ── */}
+        <div className="bg-white border border-ink/10 rounded-sm p-5">
+          <p className="font-mono text-[11px] uppercase tracking-wide text-slate mb-3">
+            {t('referral_your_code')}
+          </p>
+
+          {referralCode ? (
+            <div className="flex items-center gap-3">
+              <div className="flex-1 bg-paperDark border border-ink/10 rounded-sm px-4 py-3">
+                <span className="font-mono font-bold text-xl text-ink tracking-widest">
+                  {referralCode}
+                </span>
+              </div>
+              <button
+                onClick={copyCode}
+                className={`px-4 py-3 rounded-sm text-sm font-medium transition-colors ${
+                  copied
+                    ? 'bg-stock text-white'
+                    : 'bg-ink text-white hover:bg-signal'
+                }`}
+              >
+                {copied ? t('referral_copied') : t('referral_copy')}
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-3">
+              <div className="flex-1 bg-paperDark border border-ink/10 rounded-sm px-4 py-3 text-slate text-sm font-mono">
+                {generating ? '…' : t('referral_no_code')}
+              </div>
+              <button
+                onClick={generateCode}
+                disabled={generating}
+                className="px-4 py-3 rounded-sm text-sm font-medium bg-ink text-white hover:bg-signal transition-colors disabled:opacity-50"
+              >
+                {generating ? '…' : t('referral_generate')}
+              </button>
+            </div>
+          )}
+
+          {genError && <p className="text-signal text-xs mt-2">{genError}</p>}
+
+          {/* Bouton partager */}
+          {referralCode && (
+            <button
+              onClick={shareMessage}
+              className="mt-3 w-full border border-ink/15 rounded-sm py-2.5 text-sm text-ink hover:bg-ink/5 transition-colors font-medium"
+            >
+              📤 {t('referral_share')}
+            </button>
+          )}
+        </div>
+
+        {/* ── Comment ça marche ── */}
+        <div className="bg-white border border-ink/10 rounded-sm p-5">
+          <p className="font-display font-semibold text-sm text-ink mb-4">{t('referral_how_title')}</p>
+          <ol className="flex flex-col gap-3">
+            {[
+              t('referral_how_1'),
+              t('referral_how_2'),
+              t('referral_how_3'),
+            ].map((step, i) => (
+              <li key={i} className="flex items-start gap-3">
+                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-signal text-white text-xs font-bold flex items-center justify-center mt-0.5">
+                  {i + 1}
+                </span>
+                <p className="text-sm text-ink/80 leading-relaxed">{step}</p>
+              </li>
+            ))}
+          </ol>
+          <p className="text-xs text-slate font-mono mt-4 border-t border-ink/5 pt-3">
+            {t('referral_bank_excluded_note')}
+          </p>
+        </div>
+
+        {/* ── Historique des gains ── */}
+        <div className="bg-white border border-ink/10 rounded-sm overflow-hidden">
+          <div className="px-5 py-4 border-b border-ink/10">
+            <p className="font-display font-semibold text-sm text-ink">{t('referral_history_title')}</p>
+          </div>
+
+          {referrals.length === 0 ? (
+            <div className="px-5 py-10 text-center">
+              <span className="text-3xl block mb-3">🎯</span>
+              <p className="text-slate text-sm font-mono">{t('referral_history_empty')}</p>
+            </div>
+          ) : (
+            <div className="divide-y divide-ink/5">
+              {referrals.map((ref, idx) => (
+                <div key={idx} className="px-5 py-3.5 flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-ink font-mono">{ref.orderId}</p>
+                    <p className="text-xs text-slate font-mono mt-0.5">
+                      {formatDate(ref.createdAt, locale)}
+                      {' · '}
+                      {ref.refereeEmail?.split('@')[0]}@…
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-mono font-bold text-stock text-sm">
+                      +€{Number(ref.commission).toFixed(2)}
+                    </p>
+                    <p className="text-[10px] font-mono text-slate mt-0.5">{t(`referral_status_${ref.status}`) || ref.status}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* ── Note retrait ── */}
+        <p className="text-xs text-slate text-center">
+          {t('referral_withdraw_note')}{' '}
+          <Link href="/contatti" className="text-signal hover:underline">
+            {t('orders_contact_support')}
+          </Link>
+        </p>
+      </div>
+    </>
+  );
+}
+
+// ── Page principale ──────────────────────────────────────────────────────
 export default function Ordini() {
   const { t, locale } = useLocale();
   const { user, authLoading, logout } = useAuth();
@@ -550,9 +757,10 @@ export default function Ordini() {
   }
 
   const TABS = [
-    { key: 'orders', label: t('account_tab_orders'), icon: '📦' },
-    { key: 'profile', label: t('account_tab_profile'), icon: '👤' },
+    { key: 'orders',   label: t('account_tab_orders'),   icon: '📦' },
+    { key: 'profile',  label: t('account_tab_profile'),  icon: '👤' },
     { key: 'security', label: t('account_tab_security'), icon: '🔒' },
+    { key: 'referral', label: t('account_tab_referral'), icon: '🎁' },
   ];
 
   return (
@@ -560,7 +768,7 @@ export default function Ordini() {
       <section className="max-w-5xl mx-auto px-4 sm:px-6 py-12">
         <div className="flex flex-col lg:flex-row gap-8">
 
-          {/* Sidebar gauche */}
+          {/* Sidebar */}
           <aside className="lg:w-56 flex-shrink-0">
             <div className="lg:sticky lg:top-6">
               <div className="mb-4 px-1">
@@ -595,9 +803,10 @@ export default function Ordini() {
 
           {/* Contenu */}
           <div className="flex-1 min-w-0">
-            {activeTab === 'orders' && <OrdersTab t={t} locale={locale} user={user} />}
-            {activeTab === 'profile' && <ProfileTab t={t} user={user} />}
+            {activeTab === 'orders'   && <OrdersTab   t={t} locale={locale} user={user} />}
+            {activeTab === 'profile'  && <ProfileTab  t={t} user={user} />}
             {activeTab === 'security' && <SecurityTab t={t} user={user} />}
+            {activeTab === 'referral' && <ReferralTab t={t} locale={locale} user={user} />}
           </div>
         </div>
       </section>
